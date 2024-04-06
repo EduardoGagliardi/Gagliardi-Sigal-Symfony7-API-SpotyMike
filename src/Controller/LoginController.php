@@ -6,11 +6,13 @@ use App\Entity\User;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
+use PhpParser\JsonDecoder;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Serializer\Encoder\JsonDecode;
 
 class LoginController extends AbstractController
 {
@@ -23,19 +25,38 @@ class LoginController extends AbstractController
         $this->repository = $entityManager->getRepository(User::class);
     }
 
-    #[Route('/login/register', name: 'user_post', methods: 'POST')]
+    #[Route('/register', name: 'register_post', methods: 'POST')]
     public function create(Request $request, UserPasswordHasherInterface $passwordHash): JsonResponse
-    {
+    {   
+        parse_str($request->getContent(), $userInfo);
+
+        switch ($userInfo) {
+            case $userInfo["firstname"] == null || $userInfo["lastname"] == null || $userInfo["email"] == null || $userInfo["password"] == null || $userInfo["datebirth"] == null:
+                return $this->json([
+                    'error' => true,
+                    'message' => "Des champs obligatoires sont manquants."
+                ], 400);
+                break;
+            case !filter_var($userInfo["email"], FILTER_VALIDATE_EMAIL):
+                return $this->json([
+                    'error' => true,
+                    'message' => "Le format de l'email est invalide."
+                ], 400);
+                break;
+            default:
+                # code...
+                break;
+        }
 
         $user = new User();
-        $user->setFirstName("Mike");
-        $user->setlastName("Mike");
-        $user->setEmail("mike.sylvestre@lyknowledge.io");
-        $user->setIdUser("Mike");
-        $user->setsexe(1);
+        $user->setFirstName($userInfo["firstname"]);
+        $user->setlastName($userInfo["firstname"]);
+        $user->setEmail($userInfo["firstname"]);
+        $user->setIdUser($userInfo["firstname"]);
+        $user->setsexe($userInfo["firstname"]);
         $user->setCreateAt(new DateTimeImmutable());
         $user->setUpdateAt(new DateTimeImmutable());
-        $password = "Mike";
+        $password = $userInfo["firstname"];
         $hash = $passwordHash->hashPassword($user, $password); // Hash le password envoyez par l'utilisateur
         $user->setPassword($hash);
         dd($user);
@@ -43,11 +64,10 @@ class LoginController extends AbstractController
         $this->entityManager->flush();
 
         return $this->json([
-            'isNotGoodPassword' => ($passwordHash->isPasswordValid($user, 'Zoubida') ),
-            'isGoodPassword' => ($passwordHash->isPasswordValid($user, $password) ),
+            'error' => false,
+            'message' => "L'utilisateur a bien été vrée avec succès.",
             'user' => $user->serializer(),
-            'path' => 'src/Controller/UserController.php',
-        ]);
+        ], 200);
     }
 
     // use Symfony\Component\HttpFoundation\Request;
