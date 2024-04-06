@@ -5,8 +5,10 @@ namespace App\Entity;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\UserRepository;
+use DateTime;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Constraints\Date;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
@@ -37,6 +39,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(length: 15, nullable: true)]
     private ?int $sexe = null;
+
+    #[ORM\Column]
+    private ?\DateTime $datebirth = null;
 
     #[ORM\Column]
     private ?\DateTimeImmutable $createAt = null;
@@ -129,18 +134,29 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getSexe(): ?string
+    public function getSexe(): ?int
     {
         return $this->sexe;
     }
 
-    public function setSexe(?string $sexe): static
+    public function setSexe(?int $sexe): static
     {
         $this->sexe = $sexe;
 
         return $this;
     }
 
+    public function getDateBirth(): ?DateTime
+    {
+        return $this->datebirth;
+    }
+
+    public function setDateBirth(?DateTime $BirthDate): static 
+    {
+        $this->datebirth = $BirthDate;
+
+        return $this;
+    }
     public function getCreateAt(): ?\DateTimeImmutable
     {
         return $this->createAt;
@@ -205,6 +221,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             "email" => $this->getEmail(),
             "tel" => $this->getTel(),
             "sexe" => $this->getSexe(),
+            "datebirth" => $this->getDateBirth(),
             "createAt" => $this->getCreateAt(),
             "artist" => $this->getArtist() ?  $this->getArtist()->serializer() : [],
         ];

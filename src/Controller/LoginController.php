@@ -89,79 +89,47 @@ class LoginController extends AbstractController
             return true;
         }
 
-        if($user == null){
-            return $this->json([
-                'error' => true,
-                'message' => "Le compte n'est plus actif ou est suspendu."
-            ], 403);
+        switch ($user){
+            case $user == null:
+                return $this->json([
+                    'error' => true,
+                    'message' => "Le compte n'est plus actif ou est suspendu."
+                ], 403);
+                break;
+            case $parameters["username"] == null || $parameters["mdp"] == null:
+                return $this->json([
+                    'error' => true,
+                    'message' => "Email/password manquants."
+                ], 400);
+                break;
+            case !filter_var($parameters["username"], FILTER_VALIDATE_EMAIL):
+                return $this->json([
+                    'error' => true,
+                    'message' => "Le format de l'email est invalide."
+                ], 400);
+                break;
+            case !is_valid_password($parameters["mdp"]):
+                return $this->json([
+                    'error' => true,
+                    'message' => "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chifre, un caractère spécial et avoir 8 caractères minimum"
+                ], 400);
+                break;
+                /*
+                case true:
+                    return $this->json([
+                        'error' => true,
+                        'message' => "Trop de tentatives de connexion (5 max). Veuillez réessayer ultérieurerment - xxx min d'attente"
+                    ], 429);
+                    break;
+                */
+            default:
+                return $this->json([
+                    'error' => false,
+                    'message' => "L'utilisateur à été authentifié succès",
+                    'user' => $user,
+                    'token' => $JWTManager->create($user),
+                ], 200);
+                break;
         }
-        else if(!is_valid_password($parameters["mdp"])){
-            return $this->json([
-                'error' => true,
-                'message' => "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chifre, un caractère spécial et avoir 8 caractères minimum"
-            ], 400);
-        }
-        else if($parameters["username"] == null || $parameters["mdp"] == null){
-            return $this->json([
-                'error' => true,
-                'message' => "Email/password manquants."
-            ], 400);
-        }
-        else if(!filter_var($parameters["username"], FILTER_VALIDATE_EMAIL)){
-            return $this->json([
-                'error' => true,
-                'message' => "Le format de l'email est invalide."
-            ], 400);
-    }
-        else{
-            return $this->json([
-                'token' => $JWTManager->create($user),
-                'data' => $request->getContent(),
-                'message' => 'Welcome to MikeLand',
-                'path' => 'src/Controller/LoginController.php',
-            ], 200);}
-
-        // switch ($user){
-        //     case $user == null:
-        //         return $this->json([
-        //             'error' => true,
-        //             'message' => "Le compte n'est plus actif ou est suspendu."
-        //         ], 403);
-        //         break;
-        //     case $parameters->username == null || $parameters->mdp == null:
-        //         return $this->json([
-        //             'error' => true,
-        //             'message' => "Email/password manquants."
-        //         ], 400);
-        //         break;
-        //     case !filter_var($parameters->username, FILTER_VALIDATE_EMAIL):
-        //         return $this->json([
-        //             'error' => true,
-        //             'message' => "Le format de l'email est invalide."
-        //         ], 400);
-        //         break;
-        //     case !is_valid_password($parameters->mdp):
-        //         return $this->json([
-        //             'error' => true,
-        //             'message' => "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chifre, un caractère spécial et avoir 8 caractères minimum"
-        //         ], 400);
-        //         break;
-        //         /*
-        //         case true:
-        //             return $this->json([
-        //                 'error' => true,
-        //                 'message' => "Trop de tentatives de connexion (5 max). Veuillez réessayer ultérieurerment - xxx min d'attente"
-        //             ], 429);
-        //             break;
-        //         */
-        //     default:
-        //         return $this->json([
-        //             'token' => $JWTManager->create($user),
-        //             'data' => $request->getContent(),
-        //             'message' => 'Welcome to MikeLand',
-        //             'path' => 'src/Controller/LoginController.php',
-        //         ], 200);
-        //         break;
-        // }
     }
 }
