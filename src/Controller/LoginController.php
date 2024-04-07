@@ -3,64 +3,57 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Service\LoginAttemptService;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
-use PhpParser\JsonDecoder;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Symfony\Component\Serializer\Encoder\JsonDecode;
 
 class LoginController extends AbstractController
 {
-
+    private $loginAttemptService;
     private $repository;
     private $entityManager;
-    private $session;
 
-    public function __construct(SessionInterface $session, EntityManagerInterface $entityManager){
+    public function __construct(LoginAttemptService $loginAttemptService, EntityManagerInterface $entityManager){
         $this->entityManager = $entityManager;
         $this->repository = $entityManager->getRepository(User::class);
-        $this->session = $session;
+        $this->loginAttemptService = $loginAttemptService;
     }
 
-    private function is_Max_Login_Attempts_Exceeded() {
-        
-        define('MAX_LOGIN_ATTEMPTS', 5);
-        define('DELAY_DURATION', 300);
-        // Vérifier si le nombre de tentatives de connexion est défini dans la session
-        if (!isset($_SESSION['login_attempts'])) {
-            $_SESSION['login_attempts'] = 0;
-        }
-    
-        // Vérifier si le timestamp de la dernière tentative est défini dans la session
-        if (!isset($_SESSION['last_attempt_time'])) {
-            $_SESSION['last_attempt_time'] = 0;
-        }
-    
-        // Vérifier si le délai de 5 minutes s'est écoulé depuis la dernière tentative
-        if (time() - $_SESSION['last_attempt_time'] > DELAY_DURATION) {
-            // Réinitialiser le nombre de tentatives si le délai est écoulé
-            $_SESSION['login_attempts'] = 0;
-        }
-    
-        // Incrémenter le nombre de tentatives de connexion
-        $_SESSION['login_attempts']++;
-    
-        // Stocker le timestamp de la tentative de connexion actuelle
-        $_SESSION['last_attempt_time'] = time();
-    
-        // Vérifier si le nombre de tentatives de connexion dépasse le maximum
-        if ($_SESSION['login_attempts'] > MAX_LOGIN_ATTEMPTS) {
-            return true;
-        }
-    
-        return false;
-    }
+    // private function is_Max_Login_Attempts_Exceeded() {
+    //     define('MAX_LOGIN_ATTEMPTS', 5);
+    //     define('DELAY_DURATION', 300);
+
+    //     // Vérifier si le nombre de tentatives de connexion est défini dans la session
+    //     if (!$this->session->has('login_attempts')) {
+    //         $this->session->set('login_attempts', 0);
+    //     }
+
+    //     // Vérifier si le timestamp de la dernière tentative est défini dans la session
+    //     if (!$this->session->has('last_attempt_time')) {
+    //         $this->session->set('last_attempt_time', 0);
+    //     }
+
+    //     // Vérifier si le délai de 5 minutes s'est écoulé depuis la dernière tentative
+    //     if (time() - $this->session->get('last_attempt_time') > DELAY_DURATION) {
+    //         // Réinitialiser le nombre de tentatives si le délai est écoulé
+    //         $this->session->set('login_attempts', 0);
+    //     }
+
+    //     // Incrémenter le nombre de tentatives de connexion
+    //     $this->session->set('login_attempts', $this->session->get('login_attempts') + 1);
+
+    //     // Stocker le timestamp de la tentative de connexion actuelle
+    //     $this->session->set('last_attempt_time', time());
+
+    //     // Vérifier si le nombre de tentatives de connexion dépasse le maximum
+    //     return $this->session->get('login_attempts') > MAX_LOGIN_ATTEMPTS;
+    // }
 
     private function is_valid_password($password) {
         // Vérifie si le mot de passe contient au moins une majuscule
@@ -94,8 +87,6 @@ class LoginController extends AbstractController
     #[Route('/register', name: 'register_post', methods: 'POST')]
     public function create(Request $request, UserPasswordHasherInterface $passwordHash): JsonResponse
     {   
-
-
 
         parse_str($request->getContent(), $userInfo);
 
@@ -155,31 +146,17 @@ class LoginController extends AbstractController
         // $parameters = json_decode($request->getContent(), true);
         parse_str($request->getContent(), $parameters);
 
-        
-
-        switch ($user){
-            case $this->is_Max_Login_Attempts_Exceeded() :
-                return $this->json([
-                    'error' => true,
-                    'message' => "Trop de tentatives de connexion (5 max). Veuillez réessayer ultérieurerment - xxx min d'attente"
-                ], 429);
-                break;
+        switch ($parameters){
             case $user == null:
                 return $this->json([
                     'error' => true,
                     'message' => "Le compte n'est plus actif ou est suspendu."
                 ], 403);
                 break;
-            case $parameters["username"] == null || $parameters["mdp"] == null:
+            case $parameters["username"] === null || $parameters["mdp"] === null:
                 return $this->json([
                     'error' => true,
                     'message' => "Email/password manquants."
-                ], 400);
-                break;
-            case !filter_var($parameters["username"], FILTER_VALIDATE_EMAIL):
-                return $this->json([
-                    'error' => true,
-                    'message' => "Le format de l'email est invalide."
                 ], 400);
                 break;
             case !$this->is_valid_password($parameters["mdp"]):
@@ -189,6 +166,15 @@ class LoginController extends AbstractController
                 ], 400);
                 break;
             default:
+            case $this->loginAttemptService->isBlocked($parameters["username"]):
+                $remainingTime = $this->loginAttemptService->getRemainingPenaltyTime($parameters["username"]);
+                $minutes = ceil($remainingTime / 60);
+                return $this->json([
+                    'error' => true,
+                    'message' => "Trop de tentatives de connexion (5 max). Veuillez réessayer ultérieurement - $minutes min d'attente"
+                ], 429);
+                break;
+            dd(false);
                 return $this->json([
                     'error' => false,
                     'message' => "L'utilisateur à été authentifié succès",
