@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Serializer\Encoder\JsonDecode;
 
@@ -19,15 +20,83 @@ class LoginController extends AbstractController
 
     private $repository;
     private $entityManager;
+    private $session;
 
-    public function __construct(EntityManagerInterface $entityManager){
+    public function __construct(SessionInterface $session, EntityManagerInterface $entityManager){
         $this->entityManager = $entityManager;
         $this->repository = $entityManager->getRepository(User::class);
+        $this->session = $session;
+    }
+
+    private function is_Max_Login_Attempts_Exceeded() {
+        
+        define('MAX_LOGIN_ATTEMPTS', 5);
+        define('DELAY_DURATION', 300);
+        // Vérifier si le nombre de tentatives de connexion est défini dans la session
+        if (!isset($_SESSION['login_attempts'])) {
+            $_SESSION['login_attempts'] = 0;
+        }
+    
+        // Vérifier si le timestamp de la dernière tentative est défini dans la session
+        if (!isset($_SESSION['last_attempt_time'])) {
+            $_SESSION['last_attempt_time'] = 0;
+        }
+    
+        // Vérifier si le délai de 5 minutes s'est écoulé depuis la dernière tentative
+        if (time() - $_SESSION['last_attempt_time'] > DELAY_DURATION) {
+            // Réinitialiser le nombre de tentatives si le délai est écoulé
+            $_SESSION['login_attempts'] = 0;
+        }
+    
+        // Incrémenter le nombre de tentatives de connexion
+        $_SESSION['login_attempts']++;
+    
+        // Stocker le timestamp de la tentative de connexion actuelle
+        $_SESSION['last_attempt_time'] = time();
+    
+        // Vérifier si le nombre de tentatives de connexion dépasse le maximum
+        if ($_SESSION['login_attempts'] > MAX_LOGIN_ATTEMPTS) {
+            return true;
+        }
+    
+        return false;
+    }
+
+    private function is_valid_password($password) {
+        // Vérifie si le mot de passe contient au moins une majuscule
+        if (!preg_match('/[A-Z]/', $password)) {
+            return false;
+        }
+        
+        // Vérifie si le mot de passe contient au moins une minuscule
+        if (!preg_match('/[a-z]/', $password)) {
+            return false;
+        }
+        
+        // Vérifie si le mot de passe contient au moins un chiffre
+        if (!preg_match('/[0-9]/', $password)) {
+            return false;
+        }
+        
+        // Vérifie si le mot de passe contient au moins un caractère spécial
+        if (!preg_match('/[!@#$%^&*()-_=+{};:,<.>]/', $password)) {
+            return false;
+        }
+        
+        // Vérifie si le mot de passe a une longueur d'au moins 8 caractères
+        if (strlen($password) < 8) {
+            return false;
+        }
+        
+        return true;
     }
 
     #[Route('/register', name: 'register_post', methods: 'POST')]
     public function create(Request $request, UserPasswordHasherInterface $passwordHash): JsonResponse
     {   
+
+
+
         parse_str($request->getContent(), $userInfo);
 
         switch ($userInfo) {
@@ -43,6 +112,12 @@ class LoginController extends AbstractController
                     'message' => "Le format de l'email est invalide."
                 ], 400);
                 break;
+                case !$this->is_valid_password($userInfo["password"]):
+                    return $this->json([
+                        'error' => true,
+                        'message' => "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chifre, un caractère spécial et avoir 8 caractères minimum"
+                    ], 400);
+                    break;
             default:
                 # code...
                 break;
@@ -80,36 +155,15 @@ class LoginController extends AbstractController
         // $parameters = json_decode($request->getContent(), true);
         parse_str($request->getContent(), $parameters);
 
-        function is_valid_password($password) {
-            // Vérifie si le mot de passe contient au moins une majuscule
-            if (!preg_match('/[A-Z]/', $password)) {
-                return false;
-            }
-            
-            // Vérifie si le mot de passe contient au moins une minuscule
-            if (!preg_match('/[a-z]/', $password)) {
-                return false;
-            }
-            
-            // Vérifie si le mot de passe contient au moins un chiffre
-            if (!preg_match('/[0-9]/', $password)) {
-                return false;
-            }
-            
-            // Vérifie si le mot de passe contient au moins un caractère spécial
-            if (!preg_match('/[!@#$%^&*()-_=+{};:,<.>]/', $password)) {
-                return false;
-            }
-            
-            // Vérifie si le mot de passe a une longueur d'au moins 8 caractères
-            if (strlen($password) < 8) {
-                return false;
-            }
-            
-            return true;
-        }
+        
 
         switch ($user){
+            case $this->is_Max_Login_Attempts_Exceeded() :
+                return $this->json([
+                    'error' => true,
+                    'message' => "Trop de tentatives de connexion (5 max). Veuillez réessayer ultérieurerment - xxx min d'attente"
+                ], 429);
+                break;
             case $user == null:
                 return $this->json([
                     'error' => true,
@@ -128,20 +182,12 @@ class LoginController extends AbstractController
                     'message' => "Le format de l'email est invalide."
                 ], 400);
                 break;
-            case !is_valid_password($parameters["mdp"]):
+            case !$this->is_valid_password($parameters["mdp"]):
                 return $this->json([
                     'error' => true,
                     'message' => "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chifre, un caractère spécial et avoir 8 caractères minimum"
                 ], 400);
                 break;
-                /*
-                case true:
-                    return $this->json([
-                        'error' => true,
-                        'message' => "Trop de tentatives de connexion (5 max). Veuillez réessayer ultérieurerment - xxx min d'attente"
-                    ], 429);
-                    break;
-                */
             default:
                 return $this->json([
                     'error' => false,
