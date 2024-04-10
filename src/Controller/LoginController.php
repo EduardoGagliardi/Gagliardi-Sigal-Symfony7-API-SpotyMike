@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Service\LoginAttemptService;
+use DateTime;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
@@ -12,6 +13,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class LoginController extends AbstractController
 {
@@ -25,37 +27,15 @@ class LoginController extends AbstractController
         $this->loginAttemptService = $loginAttemptService;
     }
 
-    // private function is_Max_Login_Attempts_Exceeded() {
-    //     define('MAX_LOGIN_ATTEMPTS', 5);
-    //     define('DELAY_DURATION', 300);
+    private function isDateFormatValid(ValidatorInterface $validator, $dateString){
+        $errors = $validator->validate($dateString, [
+            new \Symfony\Component\Validator\Constraints\Date(['format' => 'd/m/Y']),
+        ]);
 
-    //     // Vérifier si le nombre de tentatives de connexion est défini dans la session
-    //     if (!$this->session->has('login_attempts')) {
-    //         $this->session->set('login_attempts', 0);
-    //     }
+        return count($errors) === 0;
+    }
 
-    //     // Vérifier si le timestamp de la dernière tentative est défini dans la session
-    //     if (!$this->session->has('last_attempt_time')) {
-    //         $this->session->set('last_attempt_time', 0);
-    //     }
-
-    //     // Vérifier si le délai de 5 minutes s'est écoulé depuis la dernière tentative
-    //     if (time() - $this->session->get('last_attempt_time') > DELAY_DURATION) {
-    //         // Réinitialiser le nombre de tentatives si le délai est écoulé
-    //         $this->session->set('login_attempts', 0);
-    //     }
-
-    //     // Incrémenter le nombre de tentatives de connexion
-    //     $this->session->set('login_attempts', $this->session->get('login_attempts') + 1);
-
-    //     // Stocker le timestamp de la tentative de connexion actuelle
-    //     $this->session->set('last_attempt_time', time());
-
-    //     // Vérifier si le nombre de tentatives de connexion dépasse le maximum
-    //     return $this->session->get('login_attempts') > MAX_LOGIN_ATTEMPTS;
-    // }
-
-    private function is_valid_password($password) {
+    private function isValidPassword($password) {
         // Vérifie si le mot de passe contient au moins une majuscule
         if (!preg_match('/[A-Z]/', $password)) {
             return false;
@@ -84,9 +64,26 @@ class LoginController extends AbstractController
         return true;
     }
 
+    private function isUserOverAge($birthdateString){
+        $birthdate = new DateTime($birthdateString);
+        $today = new DateTime();
+        $age = $today->diff($birthdate)->y;
+
+        return $age >= 12;
+    }
+
+    private function isEmailUsed($email){
+        
+        $user = $this->repository->findOneBy(["email" => $email]);
+
+        if ($user == null){
+            return false;
+        }
+        return true;
+    }
+
     #[Route('/register', name: 'register_post', methods: 'POST')]
-    public function create(Request $request, UserPasswordHasherInterface $passwordHash): JsonResponse
-    {   
+    public function create(Request $request, UserPasswordHasherInterface $passwordHash,ValidatorInterface $validator): JsonResponse{   
 
         parse_str($request->getContent(), $userInfo);
 
@@ -103,48 +100,76 @@ class LoginController extends AbstractController
                     'message' => "Le format de l'email est invalide."
                 ], 400);
                 break;
-                case !$this->is_valid_password($userInfo["password"]):
-                    return $this->json([
-                        'error' => true,
-                        'message' => "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chifre, un caractère spécial et avoir 8 caractères minimum"
-                    ], 400);
-                    break;
+            case !$this->isValidPassword($userInfo["password"]):
+                return $this->json([
+                    'error' => true,
+                    'message' => "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chifre, un caractère spécial et avoir 8 caractères minimum"
+                ], 400);
+                break;
+            case !$this->isDateFormatValid($validator, $userInfo["datebirth"]):
+                return $this->json([
+                    'error' => true,
+                    'message' => "Le format de la date de naissance et invalide. Le format attendu est JJ/MM/AAAA."
+                ], 400);
+                break;
+            case !$this->isUserOverAge($userInfo["datebirth"]):
+                return $this->json([
+                    'error' => true,
+                    'message' => "L'utilisateur doit avoir au moins 12 ans."
+                ], 400);
+                break;
+            case!preg_match("#^(\+33|0)[67][0-9]{8}$#", $userInfo["tel"]):
+                return $this->json([
+                    'error' => true,
+                    'message' => "Le format du numéro de téléphone est invalide."
+                ], 400);
+                break;
+            case !$userInfo["sexe"] == 1 || !$userInfo["sexe"] == 0:
+                return $this->json([
+                    'error' => true,
+                    'message' => "La valeur du champ sexe est invalide. Les valeurs autorisées sont 0 pour Femme, 1 pour Homme."
+                ], 400);
+                break;
+            case !$userInfo["sexe"] == 1 || !$userInfo["sexe"] == 0:
+                return $this->json([
+                    'error' => true,
+                    'message' => "Cet email est déjà utilisé par un autre compte."
+                ], 409);
+                break;
             default:
-                # code...
+                $user = new User();
+                $user->setFirstName($userInfo["firstname"]);
+                $user->setlastName($userInfo["lastname"]);
+                $user->setEmail($userInfo["emai"]);
+                $user->setIdUser("User_".rand(0,999));
+                $user->setsexe($userInfo["sexe"]);
+                $user->setDateBirth($userInfo["datebirth"]);
+                $user->setCreateAt(new DateTimeImmutable());
+                $user->setUpdateAt(new DateTimeImmutable());
+                $password = $userInfo["password"];
+                $hash = $passwordHash->hashPassword($user, $password); // Hash le password envoyez par l'utilisateur
+                $user->setPassword($hash);
+                dd($user);
+                $this->entityManager->persist($user);
+                $this->entityManager->flush();
+        
+                return $this->json([
+                    'error' => false,
+                    'message' => "L'utilisateur a bien été vrée avec succès.",
+                    'user' => $user->serializer(),
+                ], 201);
                 break;
         }
-
-        $user = new User();
-        $user->setFirstName($userInfo["firstname"]);
-        $user->setlastName($userInfo["firstname"]);
-        $user->setEmail($userInfo["firstname"]);
-        $user->setIdUser($userInfo["firstname"]);
-        $user->setsexe($userInfo["firstname"]);
-        $user->setCreateAt(new DateTimeImmutable());
-        $user->setUpdateAt(new DateTimeImmutable());
-        $password = $userInfo["firstname"];
-        $hash = $passwordHash->hashPassword($user, $password); // Hash le password envoyez par l'utilisateur
-        $user->setPassword($hash);
-        dd($user);
-        $this->entityManager->persist($user);
-        $this->entityManager->flush();
-
-        return $this->json([
-            'error' => false,
-            'message' => "L'utilisateur a bien été vrée avec succès.",
-            'user' => $user->serializer(),
-        ], 200);
     }
 
     // use Symfony\Component\HttpFoundation\Request;
     #[Route('/login', name: 'app_login_post', methods: ['POST', 'PUT'])]
-    public function login(Request $request, JWTTokenManagerInterface $JWTManager): JsonResponse
-    {
-
-        $user = $this->repository->findOneBy(["email" => "User_331"]);
+    public function login(Request $request, JWTTokenManagerInterface $JWTManager): JsonResponse{
 
         // $parameters = json_decode($request->getContent(), true);
         parse_str($request->getContent(), $parameters);
+
+        $user = $this->repository->findOneBy(["email" => $parameters["email"]]);
 
         switch ($parameters){
             case $user == null:
@@ -159,7 +184,7 @@ class LoginController extends AbstractController
                     'message' => "Email/password manquants."
                 ], 400);
                 break;
-            case !$this->is_valid_password($parameters["mdp"]):
+            case !$this->isValidPassword($parameters["mdp"]):
                 return $this->json([
                     'error' => true,
                     'message' => "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chifre, un caractère spécial et avoir 8 caractères minimum"
