@@ -16,7 +16,7 @@ class Artist
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\OneToOne(inversedBy: 'artist', cascade: ['persist', 'remove'])]
+    #[ORM\OneToOne(inversedBy: 'artist', cascade: ['remove'])]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $User_idUser = null;
 
@@ -149,5 +149,17 @@ class Artist
         }
 
         return $this;
+    }
+
+    public function serializer($children = false)
+    {
+        return [
+            "id" => $this->getId(),
+            "idUser" => ($children) ? $this->getUserIdUser() : null,
+            "fullname" => $this->getFullname(),
+            "label" => $this->getLabel(),
+            "description" => $this->getDescription(),
+            "songs" => $this->getSongs()
+        ];
     }
 }

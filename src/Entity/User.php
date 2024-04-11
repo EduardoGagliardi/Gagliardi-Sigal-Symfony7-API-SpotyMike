@@ -2,12 +2,16 @@
 
 namespace App\Entity;
 
-use App\Repository\UserRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use App\Repository\UserRepository;
+use DateTime;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Constraints\Date;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-class User
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -15,13 +19,16 @@ class User
     private ?int $id = null;
 
     // #[ORM\Id]
-    #[ORM\Column(length: 90)]
+    #[ORM\Column(length: 90, unique:true)]
     private ?string $idUser = null;
 
     #[ORM\Column(length: 55)]
-    private ?string $name = null;
+    private ?string $firstname = null;
 
-    #[ORM\Column(length: 80)]
+    #[ORM\Column(length: 55)]
+    private ?string $lastname = null;
+
+    #[ORM\Column(length: 80, unique:true)]
     private ?string $email = null;
 
     #[ORM\Column(length: 90)]
@@ -29,6 +36,12 @@ class User
 
     #[ORM\Column(length: 15, nullable: true)]
     private ?string $tel = null;
+
+    #[ORM\Column(length: 15, nullable: true)]
+    private ?int $sexe = null;
+
+    #[ORM\Column]
+    private ?\DateTime $datebirth = null;
 
     #[ORM\Column]
     private ?\DateTimeImmutable $createAt = null;
@@ -56,16 +69,33 @@ class User
         return $this;
     }
 
-    public function getName(): ?string
+    public function getFirstName(): ?string
     {
-        return $this->name;
+        return $this->firstname;
     }
 
-    public function setName(string $name): static
+    public function setFirstName(string $name): static
     {
-        $this->name = $name;
+        $this->firstname = $name;
 
         return $this;
+    }
+
+    public function getLastName(): ?string
+    {
+        return $this->lastname;
+    }
+
+    public function setLastName(string $name): static
+    {
+        $this->lastname = $name;
+
+        return $this;
+    }
+
+    public function getUsername(): ?string
+    {
+        return $this->email;
     }
 
     public function getEmail(): ?string
@@ -80,12 +110,12 @@ class User
         return $this;
     }
 
-    public function getEncrypte(): ?string
+    public function getPassword(): ?string
     {
         return $this->encrypte;
     }
 
-    public function setEncrypte(string $encrypte): static
+    public function setPassword(string $encrypte): static
     {
         $this->encrypte = $encrypte;
 
@@ -104,9 +134,32 @@ class User
         return $this;
     }
 
-    public function getCreateAt(): ?\DateTimeImmutable
+    public function getSexe(): ?int
     {
-        return $this->createAt;
+        return $this->sexe;
+    }
+
+    public function setSexe(?int $sexe): static
+    {
+        $this->sexe = $sexe;
+
+        return $this;
+    }
+
+    public function getDateBirth(): ?string
+    {
+        return $this->datebirth->format('d-m-Y');;
+    }
+
+    public function setDateBirth(?DateTime $BirthDate): static 
+    {
+        $this->datebirth = $BirthDate;
+
+        return $this;
+    }
+    public function getCreateAt(): ?string
+    {
+        return $this->createAt->format('d-m-Y');;
     }
 
     public function setCreateAt(\DateTimeImmutable $createAt): static
@@ -116,9 +169,9 @@ class User
         return $this;
     }
 
-    public function getUpdateAt(): ?\DateTimeInterface
+    public function getUpdateAt(): ?string
     {
-        return $this->updateAt;
+        return $this->updateAt->format('d-m-Y');;
     }
 
     public function setUpdateAt(\DateTimeInterface $updateAt): static
@@ -136,12 +189,52 @@ class User
     public function setArtist(Artist $artist): static
     {
         // set the owning side of the relation if necessary
-        if ($artist->getUserIdUser() !== $this) {
-            $artist->setUserIdUser($this);
+        if ($artist->getUserIdUser() !== $this->getIdUser()) {
+            $artist->setUserIdUser($this->getIdUser());
         }
 
         $this->artist = $artist;
 
         return $this;
+    }
+
+    public function getRoles(): array{
+
+        return ['PUBLIC_ACCESS'];
+    }
+
+    public function eraseCredentials(): void{
+
+    }
+
+    public function getUserIdentifier(): string{
+        return $this->getEmail();
+    }
+
+    public function serializer()
+    {
+        return [
+            "firstname" => $this->getFirstName(),
+            "lastname" => $this->getLastName(),
+            "email" => $this->getEmail(),
+            "tel" => $this->getTel(),
+            "sexe" => $this->getSexe(),
+            "datebirth" => $this->getDateBirth(),
+            "createAt" => $this->getCreateAt(),
+            "updatedAt" => $this->getUpdateAt()
+        ];
+    }
+    public function serializerType2()
+    {
+        return [
+            "firstname" => $this->getFirstName(),
+            "lastname" => $this->getLastName(),
+            "email" => $this->getEmail(),
+            "tel" => $this->getTel(),
+            "sexe" => $this->getSexe(),
+            "datebirth" => $this->getDateBirth(),
+            "createAt" => $this->getCreateAt(),
+            "updatedAt" => $this->getUpdateAt()
+        ];
     }
 }
