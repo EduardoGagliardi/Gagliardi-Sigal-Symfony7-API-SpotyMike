@@ -27,12 +27,28 @@ class LoginController extends AbstractController
         $this->loginAttemptService = $loginAttemptService;
     }
 
-    private function isDateFormatValid(ValidatorInterface $validator, $dateString){
-        $errors = $validator->validate($dateString, [
-            new \Symfony\Component\Validator\Constraints\Date(['format' => 'd/m/Y']),
-        ]);
+    private function isDateFormatValid($dateString){
+    // Vérifier la longueur de la chaîne de date
+    if(strlen($dateString) !== 10) {
+        return false; // La longueur de la chaîne de date ne correspond pas à 'jj/mm/aaaa'
+    }
 
-        return count($errors) === 0;
+    // Vérifier le format de la chaîne de date
+    if(preg_match("#^\d{2}/\d{2}/\d{4}$#", $dateString) !== 1) {
+        return false; // Le format de la chaîne de date est incorrect
+    }
+
+    // Vérifier les détails de la date
+    $dateParts = explode('/', $dateString);
+    $day = (int)$dateParts[0];
+    $month = (int)$dateParts[1];
+    $year = (int)$dateParts[2];
+
+    if(!checkdate($month, $day, $year)) {
+        return false; // La date est invalide
+    }
+
+    return true; // La chaîne de date est valide
     }
 
     private function isValidPassword($password) {
@@ -65,11 +81,20 @@ class LoginController extends AbstractController
     }
 
     private function isUserOverAge($birthdateString){
-        $birthdate = new DateTime($birthdateString);
-        $today = new DateTime();
-        $age = $today->diff($birthdate)->y;
+        // Extraction du jour, mois et année à partir de la chaîne de date de naissance
+    list($day, $month, $year) = explode('/', $birthdateString);
 
-        return $age >= 12;
+    // Création d'un objet DateTime à partir de la chaîne de date de naissance
+    $birthdate = new DateTime("$year-$month-$day");
+
+    // Création d'un objet DateTime représentant la date d'aujourd'hui
+    $today = new DateTime();
+
+    // Calcul de la différence entre la date d'aujourd'hui et la date de naissance pour obtenir l'âge
+    $age = $today->diff($birthdate)->y;
+
+    // Vérification si l'âge est supérieur ou égal à 12 ans
+    return $age >= 12;
     }
 
     private function isEmailUsed($email){
@@ -83,10 +108,10 @@ class LoginController extends AbstractController
     }
 
     #[Route('/register', name: 'register_post', methods: 'POST')]
-    public function create(Request $request, UserPasswordHasherInterface $passwordHash,ValidatorInterface $validator): JsonResponse{   
+    public function create(Request $request, UserPasswordHasherInterface $passwordHash): JsonResponse{   
 
         parse_str($request->getContent(), $userInfo);
-
+        $userInfo["sexe"] = intval($userInfo["sexe"]);
         switch ($userInfo) {
             case $userInfo["firstname"] == null || $userInfo["lastname"] == null || $userInfo["email"] == null || $userInfo["password"] == null || $userInfo["datebirth"] == null:
                 return $this->json([
@@ -106,7 +131,7 @@ class LoginController extends AbstractController
                     'message' => "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chifre, un caractère spécial et avoir 8 caractères minimum"
                 ], 400);
                 break;
-            case !$this->isDateFormatValid($validator, $userInfo["datebirth"]):
+            case !$this->isDateFormatValid($userInfo["datebirth"]):
                 return $this->json([
                     'error' => true,
                     'message' => "Le format de la date de naissance et invalide. Le format attendu est JJ/MM/AAAA."
@@ -124,32 +149,34 @@ class LoginController extends AbstractController
                     'message' => "Le format du numéro de téléphone est invalide."
                 ], 400);
                 break;
-            case !$userInfo["sexe"] == 1 || !$userInfo["sexe"] == 0:
+            case $userInfo["sexe"] !== 1 && $userInfo["sexe"] !== 0:
                 return $this->json([
                     'error' => true,
                     'message' => "La valeur du champ sexe est invalide. Les valeurs autorisées sont 0 pour Femme, 1 pour Homme."
                 ], 400);
                 break;
-            case !$userInfo["sexe"] == 1 || !$userInfo["sexe"] == 0:
+            case $this->isEmailUsed($userInfo["email"]):
                 return $this->json([
                     'error' => true,
                     'message' => "Cet email est déjà utilisé par un autre compte."
                 ], 409);
                 break;
             default:
+            
+                $date = DateTime::createFromFormat('d/m/Y', $userInfo["datebirth"]);
                 $user = new User();
                 $user->setFirstName($userInfo["firstname"]);
                 $user->setlastName($userInfo["lastname"]);
-                $user->setEmail($userInfo["emai"]);
+                $user->setEmail($userInfo["email"]);
                 $user->setIdUser("User_".rand(0,999));
                 $user->setsexe($userInfo["sexe"]);
-                $user->setDateBirth($userInfo["datebirth"]);
+                $user->setTel($userInfo["tel"]);
+                $user->setDateBirth($date);
                 $user->setCreateAt(new DateTimeImmutable());
                 $user->setUpdateAt(new DateTimeImmutable());
                 $password = $userInfo["password"];
                 $hash = $passwordHash->hashPassword($user, $password); // Hash le password envoyez par l'utilisateur
                 $user->setPassword($hash);
-                dd($user);
                 $this->entityManager->persist($user);
                 $this->entityManager->flush();
         

@@ -146,9 +146,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getDateBirth(): ?DateTime
+    public function getDateBirth(): ?string
     {
-        return $this->datebirth;
+        return $this->datebirth->format('d-m-Y');;
     }
 
     public function setDateBirth(?DateTime $BirthDate): static 
@@ -157,9 +157,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
-    public function getCreateAt(): ?\DateTimeImmutable
+    public function getCreateAt(): ?string
     {
-        return $this->createAt;
+        return $this->createAt->format('d-m-Y');;
     }
 
     public function setCreateAt(\DateTimeImmutable $createAt): static
@@ -169,9 +169,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getUpdateAt(): ?\DateTimeInterface
+    public function getUpdateAt(): ?string
     {
-        return $this->updateAt;
+        return $this->updateAt->format('d-m-Y');;
     }
 
     public function setUpdateAt(\DateTimeInterface $updateAt): static
@@ -214,8 +214,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function serializer()
     {
         return [
-            "id" => $this->getId(),
-            "idUser" => $this->getIdUser(),
             "firstname" => $this->getFirstName(),
             "lastname" => $this->getLastName(),
             "email" => $this->getEmail(),
@@ -223,7 +221,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             "sexe" => $this->getSexe(),
             "datebirth" => $this->getDateBirth(),
             "createAt" => $this->getCreateAt(),
-            "artist" => $this->getArtist() ?  $this->getArtist()->serializer() : [],
+            "updatedAt" => $this->getUpdateAt()
+        ];
+    }
+    public function serializerType2()
+    {
+        return [
+            "firstname" => $this->getFirstName(),
+            "lastname" => $this->getLastName(),
+            "email" => $this->getEmail(),
+            "tel" => $this->getTel(),
+            "sexe" => $this->getSexe(),
+            "datebirth" => $this->getDateBirth(),
+            "createAt" => $this->getCreateAt(),
+            "updatedAt" => $this->getUpdateAt()
         ];
     }
 }
