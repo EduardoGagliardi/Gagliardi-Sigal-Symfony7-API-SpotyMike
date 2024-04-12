@@ -137,7 +137,7 @@ class UserController extends AbstractController
             return $this->json($this->tokenVerifier->sendJsonErrorToken($TokenVerif),401);
         }
         $user = $TokenVerif;
-        $parametres["sexe"] = intval($parametres["sexe"]);
+        
         
         switch ($user) {
             case !preg_match("#^(\+33|0)[67][0-9]{8}$#", $parametres["tel"]):

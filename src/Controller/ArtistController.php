@@ -2,8 +2,10 @@
 
 namespace App\Controller;
 
-use App\DataFixtures\User;
+use App\Entity\Artist;
+use App\Entity\User;
 use App\Service\LoginAttemptService;
+use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -25,29 +27,88 @@ class ArtistController extends AbstractController
         $this->loginAttemptService = $loginAttemptService;
     }
 
-    #[Route('/account-deactivation', name: 'user_delete', methods: 'DELETE')]
-    public function Delete(Request $request):JsonResponse{
-    parse_str($request->getContent(), $parametres);
+    // #[Route('/account-deactivation', name: 'user_delete', methods: 'DELETE')]
+    // public function Delete(Request $request):JsonResponse{
+    //     parse_str($request->getContent(), $parametres);
 
+    //     $TokenVerif = $this->tokenVerifier->checkToken($request);
+    //     if(gettype($TokenVerif) == 'boolean'){
+    //         return $this->json($this->tokenVerifier->sendJsonErrorToken($TokenVerif),401);
+    //     }
+    //     $user = $TokenVerif;
+    //     $parametres["sexe"] = intval($parametres["sexe"]);
+
+    //     $TokenVerif = $this->tokenVerifier->checkToken($request);
+    //     if(gettype($TokenVerif) == 'boolean'){
+    //         return $this->json($this->tokenVerifier->sendJsonErrorToken($TokenVerif),401);
+    //     }
+    //     $user = $TokenVerif;
+    //     switch ($user) {
+    //         case $user->getStatut() == false:
+    //             return $this->json([
+    //                 'error' => true,
+    //                 'message' => 'Le compte est déjà désactivé.'
+    //             ], 409);
+    //             break;
+    //         default:
+    //             $utilisateur = $this->entityManager->getRepository(User::class)->find($user->getId());
+    //             $utilisateur->setStatut(false);
+    //             $this->entityManager->flush();
+    //             return $this->json([
+    //                 'error' => false,
+    //                 'message' => "Votre compte a été désactivé avec succés. Nous sommes désolés de vous voir partir."
+    //             ], 200);
+    //             break;
+    //     }
+    // }
+    #[Route('/artist', name: 'create_artist', methods: 'POST')]
+    public function create(Request $request):JsonResponse{
+        parse_str($request->getContent(), $parametres);
+        //on vérifie le token et on récupère user du token
         $TokenVerif = $this->tokenVerifier->checkToken($request);
         if(gettype($TokenVerif) == 'boolean'){
             return $this->json($this->tokenVerifier->sendJsonErrorToken($TokenVerif),401);
         }
         $user = $TokenVerif;
-        switch ($user) {
-            case $user->getStatut() == false:
+
+        //on récupère la diférance d'age
+        $dateString = $user->getDateBirth();
+        $format = 'Y-m-d'; 
+        $dateOfBirth = new DateTime($dateString);
+        $dateOfBirth->format('Y-m-d H:i:s');
+        $currentDate = new DateTime(); 
+        $age = $currentDate->diff($dateOfBirth)->y;
+
+        switch ($parametres) {
+            case $parametres["label"] == null || $parametres["fullname"] == null:
                 return $this->json([
                     'error' => true,
-                    'message' => 'Le compte est déjà désactivé.'
-                ], 409);
+                    'message' => "L'id du label et le fullname sont obligatoires."
+                ],400);
+                break;
+            case preg_match('/[!@#$%^&*()-_=+{};:,<.>]/',$parametres["label"]):
+                return $this->json([
+                    'error' => true,
+                    'message' => "Le format de l'id du label est invalide"
+                ]);
+                break;
+            case $age > 16:
+                return $this->json([
+                    'error' => true,
+                    'message' => "Vous devez avoir au moins 16 ans pour être artiste."
+                ], 403);
                 break;
             default:
-                $utilisateur = $this->entityManager->getRepository(User::class)->find($user->getId());
-                $utilisateur->setStatut(false);
-                $this->entityManager->flush();
+            $artiste = new Artist;
+            $artiste->setLabel($parametres["label"]);
+            $artiste->setFullname($parametres["fullname"]);
+            $artiste->setDescription($parametres["description"]);
+            $artiste->setUserId($user);
+            dd($artiste);
                 return $this->json([
-                    'error' => false,
-                    'message' => "Votre compte a été désactivé avec succés. Nous sommes désolés de vous voir partir."
+                    'success' => true,
+                    'message' => "Votre compte d'artiste a été créé avec succès. Bienvenue dans notre communauté d'artiste!",
+                    'artist_id' => $artiste->getid()
                 ], 200);
                 break;
         }
