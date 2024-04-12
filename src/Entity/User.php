@@ -52,6 +52,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToOne(mappedBy: 'User_idUser', cascade: ['persist', 'remove'])]
     private ?Artist $artist = null;
 
+    #[ORM\Column(length: 15)]
+    private ?bool $activated = false;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -157,9 +160,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
+    
     public function getCreateAt(): ?string
     {
-        return $this->createAt->format('d-m-Y');;
+        return $this->createAt->format('Y-m-d');;
     }
 
     public function setCreateAt(\DateTimeImmutable $createAt): static
@@ -171,7 +175,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getUpdateAt(): ?string
     {
-        return $this->updateAt->format('d-m-Y');;
+        return $this->updateAt->format('Y-m-d');
     }
 
     public function setUpdateAt(\DateTimeInterface $updateAt): static
@@ -189,11 +193,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setArtist(Artist $artist): static
     {
         // set the owning side of the relation if necessary
-        if ($artist->getUserIdUser() !== $this->getIdUser()) {
-            $artist->setUserIdUser($this->getIdUser());
+        if ($artist->getUserId() !== $this->getIdUser()) {
+            $artist->setUserId($this->getIdUser());
         }
 
         $this->artist = $artist;
+
+        return $this;
+    }
+
+    public function getStatut(): ?bool
+    {
+        return $this->activated;
+    }
+
+    public function setStatut(?bool $statut): static
+    {
+        $this->activated = $statut;
 
         return $this;
     }
@@ -212,19 +228,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     public function serializer()
-    {
-        return [
-            "firstname" => $this->getFirstName(),
-            "lastname" => $this->getLastName(),
-            "email" => $this->getEmail(),
-            "tel" => $this->getTel(),
-            "sexe" => $this->getSexe(),
-            "datebirth" => $this->getDateBirth(),
-            "createAt" => $this->getCreateAt(),
-            "updatedAt" => $this->getUpdateAt()
-        ];
-    }
-    public function serializerType2()
     {
         return [
             "firstname" => $this->getFirstName(),

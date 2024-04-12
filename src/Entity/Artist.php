@@ -46,12 +46,12 @@ class Artist
         return $this->id;
     }
 
-    public function getUserIdUser(): ?User
+    public function getUserId(): ?User
     {
         return $this->User_idUser;
     }
 
-    public function setUserIdUser(User $User_idUser): static
+    public function setUserId(User $User_idUser): static
     {
         $this->User_idUser = $User_idUser;
 
@@ -155,7 +155,7 @@ class Artist
     {
         return [
             "id" => $this->getId(),
-            "idUser" => ($children) ? $this->getUserIdUser() : null,
+            "idUser" => ($children) ? $this->getUserId() : null,
             "fullname" => $this->getFullname(),
             "label" => $this->getLabel(),
             "description" => $this->getDescription(),

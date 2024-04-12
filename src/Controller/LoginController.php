@@ -28,27 +28,27 @@ class LoginController extends AbstractController
     }
 
     private function isDateFormatValid($dateString){
-    // Vérifier la longueur de la chaîne de date
-    if(strlen($dateString) !== 10) {
-        return false; // La longueur de la chaîne de date ne correspond pas à 'jj/mm/aaaa'
-    }
+        // Vérifier la longueur de la chaîne de date
+        if(strlen($dateString) !== 10) {
+            return false; // La longueur de la chaîne de date ne correspond pas à 'jj/mm/aaaa'
+        }
 
-    // Vérifier le format de la chaîne de date
-    if(preg_match("#^\d{2}/\d{2}/\d{4}$#", $dateString) !== 1) {
-        return false; // Le format de la chaîne de date est incorrect
-    }
+        // Vérifier le format de la chaîne de date
+        if(preg_match("#^\d{2}/\d{2}/\d{4}$#", $dateString) !== 1) {
+            return false; // Le format de la chaîne de date est incorrect
+        }
 
-    // Vérifier les détails de la date
-    $dateParts = explode('/', $dateString);
-    $day = (int)$dateParts[0];
-    $month = (int)$dateParts[1];
-    $year = (int)$dateParts[2];
+        // Vérifier les détails de la date
+        $dateParts = explode('/', $dateString);
+        $day = (int)$dateParts[0];
+        $month = (int)$dateParts[1];
+        $year = (int)$dateParts[2];
 
-    if(!checkdate($month, $day, $year)) {
-        return false; // La date est invalide
-    }
+        if(!checkdate($month, $day, $year)) {
+            return false; // La date est invalide
+        }
 
-    return true; // La chaîne de date est valide
+        return true; // La chaîne de date est valide
     }
 
     private function isValidPassword($password) {
@@ -82,19 +82,19 @@ class LoginController extends AbstractController
 
     private function isUserOverAge($birthdateString){
         // Extraction du jour, mois et année à partir de la chaîne de date de naissance
-    list($day, $month, $year) = explode('/', $birthdateString);
+        list($day, $month, $year) = explode('/', $birthdateString);
 
-    // Création d'un objet DateTime à partir de la chaîne de date de naissance
-    $birthdate = new DateTime("$year-$month-$day");
+        // Création d'un objet DateTime à partir de la chaîne de date de naissance
+        $birthdate = new DateTime("$year-$month-$day");
 
-    // Création d'un objet DateTime représentant la date d'aujourd'hui
-    $today = new DateTime();
+        // Création d'un objet DateTime représentant la date d'aujourd'hui
+        $today = new DateTime();
 
-    // Calcul de la différence entre la date d'aujourd'hui et la date de naissance pour obtenir l'âge
-    $age = $today->diff($birthdate)->y;
+        // Calcul de la différence entre la date d'aujourd'hui et la date de naissance pour obtenir l'âge
+        $age = $today->diff($birthdate)->y;
 
-    // Vérification si l'âge est supérieur ou égal à 12 ans
-    return $age >= 12;
+        // Vérification si l'âge est supérieur ou égal à 12 ans
+        return $age >= 12;
     }
 
     private function isEmailUsed($email){
@@ -143,7 +143,7 @@ class LoginController extends AbstractController
                     'message' => "L'utilisateur doit avoir au moins 12 ans."
                 ], 400);
                 break;
-            case!preg_match("#^(\+33|0)[67][0-9]{8}$#", $userInfo["tel"]):
+            case !preg_match("#^(\+33|0)[67][0-9]{8}$#", $userInfo["tel"]):
                 return $this->json([
                     'error' => true,
                     'message' => "Le format du numéro de téléphone est invalide."
@@ -182,7 +182,7 @@ class LoginController extends AbstractController
         
                 return $this->json([
                     'error' => false,
-                    'message' => "L'utilisateur a bien été vrée avec succès.",
+                    'message' => "L'utilisateur a bien été crée avec succès.",
                     'user' => $user->serializer(),
                 ], 201);
                 break;
@@ -205,7 +205,7 @@ class LoginController extends AbstractController
                     'message' => "Le compte n'est plus actif ou est suspendu."
                 ], 403);
                 break;
-            case $parameters["username"] === null || $parameters["mdp"] === null:
+            case $parameters["email"] === null || $parameters["mdp"] === null:
                 return $this->json([
                     'error' => true,
                     'message' => "Email/password manquants."
@@ -217,16 +217,15 @@ class LoginController extends AbstractController
                     'message' => "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chifre, un caractère spécial et avoir 8 caractères minimum"
                 ], 400);
                 break;
-            default:
-            case $this->loginAttemptService->isBlocked($parameters["username"]):
-                $remainingTime = $this->loginAttemptService->getRemainingPenaltyTime($parameters["username"]);
+            case $this->loginAttemptService->isBlocked($parameters["email"]):
+                $remainingTime = $this->loginAttemptService->getRemainingPenaltyTime($parameters["email"]);
                 $minutes = ceil($remainingTime / 60);
                 return $this->json([
                     'error' => true,
-                    'message' => "Trop de tentatives de connexion (5 max). Veuillez réessayer ultérieurement - $minutes min d'attente"
+                    'message' => "Trop de tentatives de connexion (5 max). Veuillez réessayer ultérieurement - $minutes min d'attente."
                 ], 429);
                 break;
-            dd(false);
+            default:
                 return $this->json([
                     'error' => false,
                     'message' => "L'utilisateur à été authentifié succès",
