@@ -193,10 +193,8 @@ class UserController extends AbstractController
         }
     }
 
-    #[Route('/user', name: 'user_delete', methods: 'DELETE')]
+    #[Route('/account-deactivation', name: 'user_delete', methods: 'DELETE')]
     public function delete(Request $request): JsonResponse{
-        $this->entityManager->remove($this->repository->findOneBy(["id"=>1]));
-        $this->entityManager->flush();
         parse_str($request->getContent(), $parametres);
 
         $TokenVerif = $this->tokenVerifier->checkToken($request);
@@ -204,22 +202,28 @@ class UserController extends AbstractController
             return $this->json($this->tokenVerifier->sendJsonErrorToken($TokenVerif));
         }
         $user = $TokenVerif;
-
-        dd($user);
         switch ($user) {
-            case 'value':
-                # code...
+            case $user->getStatut() == false:
+                return $this->json([
+                    'error' => true,
+                    'message' => 'Le compte est déjà désactivé.'
+                ], 409);
                 break;
             
             default:
-                # code...
+                $utilisateur = $this->entityManager->getRepository(User::class)->find($user->getId());
+                $utilisateur->setStatut(false);
+                $this->entityManager->flush();
+                return $this->json([
+                    'error' => false,
+                    'message' => "Votre compte a été désactivé avec succés. Nous sommes désolés de vous voir partir."
+                ], 200);
                 break;
         }
     }
 
     #[Route('/user', name: 'user_get', methods: 'GET')]
-    public function read(): JsonResponse
-    {
+    public function read(): JsonResponse{
 
 
         $serializer = new Serializer([new ObjectNormalizer()]);
