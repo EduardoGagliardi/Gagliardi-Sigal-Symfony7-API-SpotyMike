@@ -134,7 +134,7 @@ class UserController extends AbstractController
 
         $TokenVerif = $this->tokenVerifier->checkToken($request);
         if(gettype($TokenVerif) == 'boolean'){
-            return $this->json($this->tokenVerifier->sendJsonErrorToken($TokenVerif));
+            return $this->json($this->tokenVerifier->sendJsonErrorToken($TokenVerif),401);
         }
         $user = $TokenVerif;
         $parametres["sexe"] = intval($parametres["sexe"]);
@@ -199,7 +199,7 @@ class UserController extends AbstractController
 
         $TokenVerif = $this->tokenVerifier->checkToken($request);
         if(gettype($TokenVerif) == 'boolean'){
-            return $this->json($this->tokenVerifier->sendJsonErrorToken($TokenVerif));
+            return $this->json($this->tokenVerifier->sendJsonErrorToken($TokenVerif),401);
         }
         $user = $TokenVerif;
         switch ($user) {
