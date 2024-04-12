@@ -49,7 +49,7 @@ class PasswordController extends AbstractController
 
                 $remainingTime = $this->loginAttemptService->getRemainingPenaltyTime($parametres["email"]);
                 $minutes = ceil($remainingTime / 60);
-                
+
                 return $this->json([
                     'error' => true,
                     'message' => "Trop de tentatives de connexion (3 max). Veuillez réessayer ultérieurement - $minutes min d'attente."
@@ -69,10 +69,5 @@ class PasswordController extends AbstractController
                 ], 200);
                 break;
         }
-
-        return $this->json([
-            'message' => 'Welcome to your new controller!',
-            'path' => 'src/Controller/PasswordController.php',
-        ]);
     }
 }
