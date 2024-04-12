@@ -217,7 +217,7 @@ class LoginController extends AbstractController
                     'message' => "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chifre, un caractère spécial et avoir 8 caractères minimum"
                 ], 400);
                 break;
-            case $this->loginAttemptService->isBlocked($parameters["email"]):
+            case $this->loginAttemptService->isBlocked($parameters["email"], false):
                 $remainingTime = $this->loginAttemptService->getRemainingPenaltyTime($parameters["email"]);
                 $minutes = ceil($remainingTime / 60);
                 return $this->json([
