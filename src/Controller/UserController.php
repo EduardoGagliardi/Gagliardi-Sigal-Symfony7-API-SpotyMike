@@ -122,11 +122,11 @@ class UserController extends AbstractController
         return true;
     }
 
-    #[Route('/user', name: 'user_post', methods: 'POST')]
-    public function create(Request $request, UserPasswordHasherInterface $passwordHash): JsonResponse{
-        return $this->json([
-        ]);
-    }
+    // #[Route('/user', name: 'user_post', methods: 'POST')]
+    // public function create(Request $request, UserPasswordHasherInterface $passwordHash): JsonResponse{
+    //     return $this->json([
+    //     ]);
+    // }
 
     #[Route('/user', name: 'user_put', methods: 'PUT')]
     public function update(Request $request): JsonResponse{
@@ -158,7 +158,7 @@ class UserController extends AbstractController
                     'message' => "Des champs obligatoires sont manquants."
                 ], 400);
                 break;
-            case $this->loginAttemptService->isBlocked($user->getEmail()):
+            case $this->loginAttemptService->isBlocked($user->getEmail(), false):
                 return $this->json([
                     'error' => true,
                 'message' => "Authentification requise. vous devez êtres connecté pour effectuer cette action."
