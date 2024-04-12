@@ -31,6 +31,7 @@ class PasswordController extends AbstractController
         $this->jwtProvider = $jwtProvider;
         $this->userRepository = $userRepository;
         $this->loginAttemptService = $loginAttemptService;
+        $this->repository = $entityManager->getRepository(User::class);
     }
 
     private function isValidPassword($password) {
@@ -118,51 +119,51 @@ class PasswordController extends AbstractController
         }
     }
 
-    // #[Route('/reset-password/{token}', name: 'password_Lost', methods: 'GET')]
-    // public function resetPassword(Request $request, TokenVerifierService $tokenVerifier, JWTTokenManagerInterface $JWTManager, string $token): JsonResponse{
+    #[Route('/reset-password/{token}', name: 'reset_password', methods: 'GET')]
+    public function resetPassword(Request $request, TokenVerifierService $tokenVerifier, JWTTokenManagerInterface $JWTManager, string $token): JsonResponse{
 
-    //     parse_str($request->getContent(), $parametres);
-    //     $dataToken = $this->jwtProvider->load($token);
-    //     $email = $dataToken->getPayload()['username'];
-    //     switch ($token){
-    //         case $token == null:
-    //             return $this->json([
-    //                 'error' => true,
-    //                 'message' => "Token de réinitialisation manquant ou invalide, Veuillez utilisé"
-    //             ], 400);
-    //             break;
-    //         case $parametres["password"] == null:
-    //             //mdp menquant
-    //             return $this->json([
-    //                 'error' => true,
-    //                 'message' => "veuiller fournir un nouveau mot de passe."
-    //             ], 400);
-    //             break;
-    //         case !$this->isValidPassword($parametres["password"]):
-    //             //format mdp invalide
-    //             return $this->json([
-    //                 'error' => true,
-    //                 'message' => "Le nouveau mot de passe ne respecte pas les critères requis. Il doit contenir au moins une majuscule, une minuscule, un chifre, un caractère spécial et être composé d'au moins 8 caractères."
-    //             ], 400);
-    //             break;
-    //         case !$this->checkToken($token):
-    //             return $this->json([
-    //                 'error' => true,
-    //                 'message' => "Votre token de réinitialisation de mot de passe a éxpiré. Veuillez refaire une demande de réinitialisation de mot de passe."
-    //             ], 410);
-    //             //token expiré
-    //             break;
-    //         default:
+        parse_str($request->getContent(), $parametres);
+        $dataToken = $this->jwtProvider->load($token);
+        $email = $dataToken->getPayload()['username'];
+        switch ($token){
+            case $token == null:
+                return $this->json([
+                    'error' => true,
+                    'message' => "Token de réinitialisation manquant ou invalide, Veuillez utilisé"
+                ], 400);
+                break;
+            case $parametres["password"] == null:
+                //mdp menquant
+                return $this->json([
+                    'error' => true,
+                    'message' => "veuiller fournir un nouveau mot de passe."
+                ], 400);
+                break;
+            case !$this->isValidPassword($parametres["password"]):
+                //format mdp invalide
+                return $this->json([
+                    'error' => true,
+                    'message' => "Le nouveau mot de passe ne respecte pas les critères requis. Il doit contenir au moins une majuscule, une minuscule, un chifre, un caractère spécial et être composé d'au moins 8 caractères."
+                ], 400);
+                break;
+            case !$this->checkToken($token):
+                return $this->json([
+                    'error' => true,
+                    'message' => "Votre token de réinitialisation de mot de passe a éxpiré. Veuillez refaire une demande de réinitialisation de mot de passe."
+                ], 410);
+                //token expiré
+                break;
+            default:
 
-    //         $utilisateur = $this->entityManager->getRepository(User::class)->findOneBy(["email" => $email]);
-    //         $utilisateur->setPassword($parametres["password"]);
-    //         dd($utilisateur);
-    //         $this->entityManager->flush();
-    //             return $this->json([
-    //                 'success' => true,
-    //                 'message' => "Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe."
-    //             ], 200);
-    //             break;
-    //     }
-    // }
+            $utilisateur = $this->entityManager->getRepository(User::class)->findOneBy(["email" => $email]);
+            $utilisateur->setPassword($parametres["password"]);
+            dd($utilisateur);
+            $this->entityManager->flush();
+                return $this->json([
+                    'success' => true,
+                    'message' => "Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe."
+                ], 200);
+                break;
+        }
+    }
 }
