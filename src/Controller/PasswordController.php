@@ -46,8 +46,10 @@ class PasswordController extends AbstractController
                 ], 400);
                 break;
             case $this->loginAttemptService->isBlocked($parametres["email"], true):
+
                 $remainingTime = $this->loginAttemptService->getRemainingPenaltyTime($parametres["email"]);
                 $minutes = ceil($remainingTime / 60);
+                
                 return $this->json([
                     'error' => true,
                     'message' => "Trop de tentatives de connexion (3 max). Veuillez réessayer ultérieurement - $minutes min d'attente."
