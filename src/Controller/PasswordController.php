@@ -146,7 +146,7 @@ class PasswordController extends AbstractController
                     'message' => "Le nouveau mot de passe ne respecte pas les critères requis. Il doit contenir au moins une majuscule, une minuscule, un chifre, un caractère spécial et être composé d'au moins 8 caractères."
                 ], 400);
                 break;
-            case !$this->checkToken($token):
+            case $this->checkToken($token):
                 return $this->json([
                     'error' => true,
                     'message' => "Votre token de réinitialisation de mot de passe a éxpiré. Veuillez refaire une demande de réinitialisation de mot de passe."
@@ -157,7 +157,6 @@ class PasswordController extends AbstractController
 
             $utilisateur = $this->entityManager->getRepository(User::class)->findOneBy(["email" => $email]);
             $utilisateur->setPassword($parametres["password"]);
-            dd($utilisateur);
             $this->entityManager->flush();
                 return $this->json([
                     'success' => true,
