@@ -9,6 +9,7 @@ use Doctrine\ORM\EntityManagerInterface;
 class LoginAttemptService
 {
     private const MAX_ATTEMPTS = 5;
+    private const MAX_ATTEMPTS_RESET = 3;
     private const PENALTY_DURATION = 300; // 5 minutes en secondes
 
     private $entityManager;
@@ -18,8 +19,59 @@ class LoginAttemptService
         $this->entityManager = $entityManager;
     }
 
-    public function isBlocked(string $email): bool
+    public function isBlocked(string $email, ?bool $type): bool
     {
+
+        if ($type){
+            $loginAttemptRepository = $this->entityManager->getRepository(LoginAttempt::class);
+
+        // Récupérer la dernière tentative de connexion
+        $lastAttempt = $loginAttemptRepository->findOneBy(['email' => $email], ['attemptedAt' => 'DESC']);
+
+        if (!$lastAttempt) {
+            // Créer un nouvel enregistrement s'il n'existe pas
+            $lastAttempt = new LoginAttempt();
+            $lastAttempt->setEmail($email);
+            $lastAttempt->setAttempt(1); // Premier essai
+            $lastAttempt->setDate(new DateTime());
+            $this->entityManager->persist($lastAttempt);
+        }
+        $currentTime = new DateTime();
+        $penaltyEnd = $lastAttempt->getdate()->getTimestamp() + self::PENALTY_DURATION;
+        if ($currentTime->getTimestamp() > $penaltyEnd) {
+            // Si plus de 5 minutes se sont écoulées depuis la dernière tentative, réinitialiser le compteur d'essais
+            $lastAttempt->setAttempt(0);
+            $this->entityManager->persist($lastAttempt);
+            $this->entityManager->flush();
+            return false;
+        }else {
+
+            // Mettre à jour le compteur d'essais
+            $lastAttempt->setAttempt($lastAttempt->getAttempt() + 1);
+            $this->entityManager->persist($lastAttempt);
+        }
+
+        // Mettre à jour la date de la dernière tentative
+        $lastAttempt->setDate(new DateTime());
+        $this->entityManager->flush();
+
+        // Vérifier si l'utilisateur est bloqué
+        if ($lastAttempt->getAttempt() >= self::MAX_ATTEMPTS_RESET) {
+            $currentTime = new DateTime();
+            $penaltyEnd = $lastAttempt->getdate()->getTimestamp() + self::PENALTY_DURATION;
+            if ($currentTime->getTimestamp() < $penaltyEnd) {
+                return true; // Utilisateur bloqué temporairement
+            } else {
+                // Réinitialiser les tentatives après la période de pénalité
+                $lastAttempt->setAttempt(0);
+                $this->entityManager->persist($lastAttempt);
+                $this->entityManager->flush();
+            }
+        }
+
+        return false; // Utilisateur non bloqué
+        }
+
         $loginAttemptRepository = $this->entityManager->getRepository(LoginAttempt::class);
 
         // Récupérer la dernière tentative de connexion

@@ -168,17 +168,33 @@ class LoginController extends AbstractController
                 $user->setFirstName($userInfo["firstname"]);
                 $user->setlastName($userInfo["lastname"]);
                 $user->setEmail($userInfo["email"]);
-                $user->setIdUser("User_".rand(0,999));
+                $user->setIdUser("User_".rand(0,999999));
                 $user->setsexe($userInfo["sexe"]);
                 $user->setTel($userInfo["tel"]);
                 $user->setDateBirth($date);
                 $user->setCreateAt(new DateTimeImmutable());
                 $user->setUpdateAt(new DateTimeImmutable());
                 $password = $userInfo["password"];
-                $hash = $passwordHash->hashPassword($user, $password); // Hash le password envoyez par l'utilisateur
+                $hash = $passwordHash->hashPassword($user, $password);
                 $user->setPassword($hash);
-                $this->entityManager->persist($user);
-                $this->entityManager->flush();
+                // $this->entityManager->persist($user);
+                // $this->entityManager->flush();
+
+                $parameters = $request->getContent();
+                parse_str($parameters, $data);
+                $explodeData = explode(",", $data['avatar']);
+                if (count($explodeData) == 2) {
+
+                    $file = base64_decode("ouezhfoiejziopfcjeipjEPZOJPFEKZPOFKEZPofkepozkfOEIZJFPIEZJIJMOUHOPIHOIHpoihmohmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHmoiuhmihmoihmhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmoihpuihpiuhpiuhhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHmhumouhpiughpiughpiugiytdfcuktg749823H0J083JpzeoKFPOKJEZPFJEZO");
+                    $chemin = $this->getParameter('upload_directory') . '/' . $user->getIdUser();
+                    mkdir($chemin);
+                    # if $filename is .png or .jpg
+                    $filename = "";
+                    if (pathinfo($file, PATHINFO_EXTENSION) == "png" || pathinfo($file, PATHINFO_EXTENSION) == "jpg") {
+                        
+                    }
+                    file_put_contents($chemin . '/file.png', $file);
+                }
         
                 return $this->json([
                     'error' => false,

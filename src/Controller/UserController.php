@@ -122,14 +122,39 @@ class UserController extends AbstractController
         return true;
     }
 
-    // #[Route('/user', name: 'user_post', methods: 'POST')]
-    // public function create(Request $request, UserPasswordHasherInterface $passwordHash): JsonResponse{
-    //     return $this->json([
-    //     ]);
-    // }
+    private function CheckRequestPost($request){
 
-    #[Route('/user', name: 'user_put', methods: 'PUT')]
-    public function update(Request $request): JsonResponse{
+        parse_str($request->getContent(), $parametres);
+            // Obtenez les clés des données envoyées dans la requête POST
+        $keys = $request->request->keys();
+
+        // Vérifiez si les clés attendues sont présentes
+        $expectedKeys = ['firstname', 'lastname', 'tel', 'sexe'];
+        $missingKeys = array_diff($expectedKeys, $keys);
+        
+        if($parametres["firstname"] == null && $parametres["lastname"] == null && $parametres["tel"] == null && $parametres["sexe"] == null){
+            return true;
+        }
+        else if(!empty($missingKeys)){
+            return true;
+        }
+        else if(strlen($parametres["firstname"])> 60){
+            return true;
+        } 
+        else if(strlen($parametres["lastname"])> 60){
+            return true;
+        }
+        else if(count($parametres["tel"]) !== 10){
+            return true;
+        }
+        else if(intval($parametres["sexe"]) !== 0 or 1){
+            return true;
+        }
+        return false;
+    }
+
+    #[Route('/user', name: 'user_post', methods: 'POST')]
+    public function create(Request $request): JsonResponse{
         parse_str($request->getContent(), $parametres);
 
         $TokenVerif = $this->tokenVerifier->checkToken($request);
@@ -137,8 +162,7 @@ class UserController extends AbstractController
             return $this->json($this->tokenVerifier->sendJsonErrorToken($TokenVerif),401);
         }
         $user = $TokenVerif;
-        
-        
+
         switch ($user) {
             case !preg_match("#^(\+33|0)[67][0-9]{8}$#", $parametres["tel"]):
                 return $this->json([
@@ -152,10 +176,10 @@ class UserController extends AbstractController
                     'message' => "La valeur du champ sexe est invalide. Les valeurs autorisées sont 0 pour Femme, 1 pour Homme."
                 ], 400);
                 break;
-            case $parametres["firstname"] == null || $parametres["lastname"] == null || $parametres["tel"] == null || $parametres["sexe"] === null :
+            case $this->CheckRequestPost($request):
                 return $this->json([
                     'error' => true,
-                    'message' => "Des champs obligatoires sont manquants."
+                    'message' => "Les données fournies sont invalides ou incomplètes."
                 ], 400);
                 break;
             case $this->loginAttemptService->isBlocked($user->getEmail(), false):
@@ -173,10 +197,18 @@ class UserController extends AbstractController
             default:
             try {
                 $utilisateur = $this->entityManager->getRepository(User::class)->find($user->getId());
-                $utilisateur->setFirstName($parametres["firstname"]);
-                $utilisateur->setLastName($parametres["lastname"]);
-                $utilisateur->setTel($parametres["tel"]);
-                $utilisateur->setSexe($parametres["sexe"]);
+                if($parametres["firstname"] != null){
+                    $utilisateur->setFirstName($parametres["firstname"]);
+                }
+                if($parametres["lastname"] != null){
+                    $utilisateur->setLastName($parametres["lastname"]);
+                }
+                if($parametres["tel"] != null){
+                    $utilisateur->setTel($parametres["tel"]);
+                }
+                if($parametres["sexe"] != null){
+                    $utilisateur->setSexe($parametres["sexe"]);
+                }
                 $this->entityManager->flush();
                 return $this->json([
                     'error' => false,
@@ -223,20 +255,20 @@ class UserController extends AbstractController
     }
 
     #[Route('/user', name: 'user_get', methods: 'GET')]
-    public function read(): JsonResponse{
-
-
-        $serializer = new Serializer([new ObjectNormalizer()]);
-        // $jsonContent = $serializer->serialize($person, 'json');
+    public function read(Request $request): JsonResponse{
+        $TokenVerif = $this->tokenVerifier->checkToken($request);
+        if(gettype($TokenVerif) == 'boolean'){
+            return $this->json($this->tokenVerifier->sendJsonErrorToken($TokenVerif),401);
+        }
+        $user = $TokenVerif;
+        $utilisateur = $this->entityManager->getRepository(User::class)->find($user->getId());
         return $this->json([
-            'message' => 'Welcome to your new controller!',
-            'path' => 'src/Controller/UserController.php',
-        ]);
+            'data' => $utilisateur->serializer(),
+        ], 200);
     }
 
     #[Route('/user/all', name: 'user_get_all', methods: 'GET')]
-    public function readAll(): JsonResponse
-    {
+    public function readAll(): JsonResponse{
         $result = [];
 
         try {

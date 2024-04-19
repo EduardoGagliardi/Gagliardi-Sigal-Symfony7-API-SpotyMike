@@ -12,6 +12,7 @@ use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
 class PasswordController extends AbstractController
@@ -120,7 +121,7 @@ class PasswordController extends AbstractController
     }
 
     #[Route('/reset-password/{token}', name: 'reset_password', methods: 'GET')]
-    public function resetPassword(Request $request, TokenVerifierService $tokenVerifier, JWTTokenManagerInterface $JWTManager, string $token): JsonResponse{
+    public function resetPassword(Request $request, TokenVerifierService $tokenVerifier, JWTTokenManagerInterface $JWTManager, UserPasswordHasherInterface $passwordHash, string $token): JsonResponse{
 
         parse_str($request->getContent(), $parametres);
         $dataToken = $this->jwtProvider->load($token);
@@ -156,7 +157,9 @@ class PasswordController extends AbstractController
             default:
 
             $utilisateur = $this->entityManager->getRepository(User::class)->findOneBy(["email" => $email]);
-            $utilisateur->setPassword($parametres["password"]);
+            $password = $parametres["password"];
+            $hash = $passwordHash->hashPassword($utilisateur, $password);
+            $utilisateur->setPassword($hash);
             $this->entityManager->flush();
                 return $this->json([
                     'success' => true,
