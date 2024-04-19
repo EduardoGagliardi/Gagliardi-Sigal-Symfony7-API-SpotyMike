@@ -177,25 +177,9 @@ class LoginController extends AbstractController
                 $password = $userInfo["password"];
                 $hash = $passwordHash->hashPassword($user, $password);
                 $user->setPassword($hash);
-                // $this->entityManager->persist($user);
-                // $this->entityManager->flush();
+                $this->entityManager->persist($user);
+                $this->entityManager->flush();
 
-                $parameters = $request->getContent();
-                parse_str($parameters, $data);
-                $explodeData = explode(",", $data['avatar']);
-                if (count($explodeData) == 2) {
-
-                    $file = base64_decode("ouezhfoiejziopfcjeipjEPZOJPFEKZPOFKEZPofkepozkfOEIZJFPIEZJIJMOUHOPIHOIHpoihmohmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHmoiuhmihmoihmhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmoihpuihpiuhpiuhhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHhmohMOHmoIHmoiHmoihMoihmoihpoUHpouHpouHpouHNpoUIHnpçOHYpobIHBpoHpboHpOIHJBpOUhbpOUhbPOHmhumouhpiughpiughpiugiytdfcuktg749823H0J083JpzeoKFPOKJEZPFJEZO");
-                    $chemin = $this->getParameter('upload_directory') . '/' . $user->getIdUser();
-                    mkdir($chemin);
-                    # if $filename is .png or .jpg
-                    $filename = "";
-                    if (pathinfo($file, PATHINFO_EXTENSION) == "png" || pathinfo($file, PATHINFO_EXTENSION) == "jpg") {
-                        
-                    }
-                    file_put_contents($chemin . '/file.png', $file);
-                }
-        
                 return $this->json([
                     'error' => false,
                     'message' => "L'utilisateur a bien été crée avec succès.",

@@ -63,6 +63,7 @@ class ArtistController extends AbstractController
     // }
     #[Route('/artist', name: 'create_artist', methods: 'POST')]
     public function create(Request $request):JsonResponse{
+
         parse_str($request->getContent(), $parametres);
         //on vérifie le token et on récupère user du token
         $TokenVerif = $this->tokenVerifier->checkToken($request);
@@ -71,6 +72,37 @@ class ArtistController extends AbstractController
         }
         $user = $TokenVerif;
 
+        $parameters = $request->getContent();
+        parse_str($parameters, $data);
+        $explodeData = explode(",", $data['avatar']);
+        $base64Data = $data['avatar'];
+        list($type, $base64Data) = explode(';', $base64Data);
+        list(, $base64Data)      = explode(',', $base64Data);
+        $extension = "";
+        if('data:image/jpeg'){
+            $extension = 'jpg';
+        }
+        else if('data:image/png'){
+            $extension = 'png';
+        }
+        // Decode the base64 data
+        $imageData = base64_decode($base64Data);
+
+        $chemin = $this->getParameter('upload_directory') . '/' . $user->getIdUser();
+        // Define the file path to save the image
+        $filePath = $chemin . "/avatar." . $extension;
+
+        if (!file_exists($chemin)) {
+            mkdir($chemin);
+        }
+        if ($extension == "png") {
+            file_put_contents($filePath, $imageData);
+        }
+        else if ($extension == "jpg") {
+            file_put_contents($filePath, $imageData);
+        }
+
+        dd('ok');
         //on récupère la diférance d'age
         $dateString = $user->getDateBirth();
         $format = 'Y-m-d'; 
@@ -92,7 +124,7 @@ class ArtistController extends AbstractController
                     'message' => "Le format de l'id du label est invalide"
                 ]);
                 break;
-            case $age > 16:
+            case $age < 16:
                 return $this->json([
                     'error' => true,
                     'message' => "Vous devez avoir au moins 16 ans pour être artiste."
