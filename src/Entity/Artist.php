@@ -48,7 +48,7 @@ class Artist
 
     public function getUserId(): ?user
     {
-        return $this->User_idUser;
+        return $this->User_idUser->getIdUser();
     }
 
     public function setUserId(user $User_idUser): static
