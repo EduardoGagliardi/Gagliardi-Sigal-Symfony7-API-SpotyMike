@@ -73,7 +73,6 @@ class ArtistController extends AbstractController
     public function create(Request $request):JsonResponse{
 
         parse_str($request->getContent(), $parametres);
-        //on vérifie le token et on récupère user du token
         $TokenVerif = $this->tokenVerifier->checkToken($request);
         if(gettype($TokenVerif) == 'boolean'){
             return $this->json($this->tokenVerifier->sendJsonErrorToken($TokenVerif),401);
@@ -93,7 +92,6 @@ class ArtistController extends AbstractController
         else if('data:image/png'){
             $extension = 'png';
         }
-        // Decode the base64 data
         $imageData = base64_decode($base64Data);
 
         if($imageData == null){
@@ -102,6 +100,7 @@ class ArtistController extends AbstractController
                 'message' => "Le serveur ne peut pas décoder le contenue base64 en fichier binaire."
             ], 422);
         }
+
         $fileSize = strlen($imageData);
         if ($fileSize < 1048576 || $fileSize > 7340032) {
             return $this->json([
@@ -111,7 +110,6 @@ class ArtistController extends AbstractController
         }
 
         $chemin = $this->getParameter('upload_directory') . '/' . $user->getIdUser();
-        // Define the file path to save the image
         $filePath = $chemin . "/avatar." . $extension;
 
         if (!file_exists($chemin)) {
