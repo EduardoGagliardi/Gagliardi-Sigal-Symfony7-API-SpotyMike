@@ -29,28 +29,75 @@ class UserController extends AbstractController
     }
 
     #[Route('/user', name: 'user_post', methods: 'POST')]
-    public function create(Request $request, UserPasswordHasherInterface $passwordHash): JsonResponse
-    {
+    public function create(Request $request): JsonResponse{
+        parse_str($request->getContent(), $parametres);
 
-        $user = new User();
-        $user->setFirstName("Mike");
-        $user->setEmail("Mike");
-        $user->setIdUser("Mike");
-        $user->setCreateAt(new DateTimeImmutable());
-        $user->setUpdateAt(new DateTimeImmutable());
-        $password = "Mike";
+        $TokenVerif = $this->tokenVerifier->checkToken($request);
+        if(gettype($TokenVerif) == 'boolean'){
+            return $this->json($this->tokenVerifier->sendJsonErrorToken($TokenVerif),401);
+        }
+        $user = $TokenVerif;
 
-        $hash = $passwordHash->hashPassword($user, $password);
-        $user->setPassword($hash);
-        $this->entityManager->persist($user);
-        $this->entityManager->flush();
-
-        return $this->json([
-            'isNotGoodPassword' => ($passwordHash->isPasswordValid($user, 'Zoubida') ),
-            'isGoodPassword' => ($passwordHash->isPasswordValid($user, $password) ),
-            'user' => $user->serializer(),
-            'path' => 'src/Controller/UserController.php',
-        ]);
+        switch ($user) {
+            case !preg_match("#^(\+33|0)[67][0-9]{8}$#", $parametres["tel"]):
+                return $this->json([
+                    'error' => true,
+                    'message' => "Le format du numéro de téléphone est invalide."
+                ], 400);
+                break;
+            case $parametres["sexe"] !== 1 && $parametres["sexe"] !== 0:
+                return $this->json([
+                    'error' => true,
+                    'message' => "La valeur du champ sexe est invalide. Les valeurs autorisées sont 0 pour Femme, 1 pour Homme."
+                ], 400);
+                break;
+            case $this->CheckRequestPost($request):
+                return $this->json([
+                    'error' => true,
+                    'message' => "Les données fournies sont invalides ou incomplètes."
+                ], 400);
+                break;
+            case $this->loginAttemptService->isBlocked($user->getEmail(), false):
+                return $this->json([
+                    'error' => true,
+                'message' => "Authentification requise. vous devez êtres connecté pour effectuer cette action."
+                ], 401);    
+                break;
+            case $this->isNumberUsed($parametres["tel"]):
+                return $this->json([
+                    'error' => true,
+                    'message' => "Conflit de données. Le numéro de téléphone est déjà utilisé par un autre utilisateur."
+                ], 401  );
+                break;
+            default:
+            try {
+                $utilisateur = $this->entityManager->getRepository(User::class)->find($user->getId());
+                if($parametres["firstname"] != null){
+                    $utilisateur->setFirstName($parametres["firstname"]);
+                }
+                if($parametres["lastname"] != null){
+                    $utilisateur->setLastName($parametres["lastname"]);
+                }
+                if($parametres["tel"] != null){
+                    $utilisateur->setTel($parametres["tel"]);
+                }
+                if($parametres["sexe"] != null){
+                    $utilisateur->setSexe($parametres["sexe"]);
+                }
+                $this->entityManager->flush();
+                return $this->json([
+                    'error' => false,
+                    'message' => "Votre inscription a bien été prise en compte",
+                ], 200);
+            } 
+            catch (\Doctrine\DBAL\Exception $e) {
+                return $this->json([
+                    'error' => true,
+                    'message' => "Erreur de validation des données.",
+                ], 422);
+            }
+                break;
+        }
     }
 
     #[Route('/user', name: 'user_put', methods: 'PUT')]
