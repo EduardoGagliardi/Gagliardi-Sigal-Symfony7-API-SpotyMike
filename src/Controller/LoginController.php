@@ -195,7 +195,6 @@ class LoginController extends AbstractController
 
         // $parameters = json_decode($request->getContent(), true);
         parse_str($request->getContent(), $parameters);
-
         $user = $this->repository->findOneBy(["email" => $parameters["email"]]);
 
         switch ($parameters){

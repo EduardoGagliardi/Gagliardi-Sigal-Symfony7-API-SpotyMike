@@ -50,8 +50,13 @@ class Artist
     {
         return $this->User_idUser->getIdUser();
     }
+    public function getUser(): ?user{
 
-    public function setUserId(string $User_idUser): static
+        return $this->User_idUser;
+        
+    }
+
+    public function setUserId(user $User_idUser): static
     {
         $this->User_idUser = $User_idUser;
 

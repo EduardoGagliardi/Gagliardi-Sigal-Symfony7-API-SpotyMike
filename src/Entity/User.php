@@ -8,7 +8,6 @@ use App\Repository\UserRepository;
 use DateTime;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
-use Symfony\Component\Validator\Constraints\Date;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
@@ -194,7 +193,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         // set the owning side of the relation if necessary
         if ($artist->getUserId() !== $this->getIdUser()) {
-            $artist->setUserId($this->getIdUser());
+            $artist->setUserId($this);
         }
 
         $this->artist = $artist;

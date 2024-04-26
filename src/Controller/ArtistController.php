@@ -12,6 +12,8 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
+use function PHPSTORM_META\type;
+
 class ArtistController extends AbstractController
 {
     
@@ -23,7 +25,7 @@ class ArtistController extends AbstractController
     public function __construct(LoginAttemptService $loginAttemptService, EntityManagerInterface $entityManager, TokenVerifierService $tokenVerifier){
         $this->entityManager = $entityManager;
         $this->tokenVerifier = $tokenVerifier;
-        $this->repository = $entityManager->getRepository(User::class);
+        $this->repository = $entityManager->getRepository(artist::class);
         $this->loginAttemptService = $loginAttemptService;
     }
 
@@ -35,51 +37,24 @@ class ArtistController extends AbstractController
         return false;
     }
 
-    // #[Route('/account-deactivation', name: 'user_delete', methods: 'DELETE')]
-    // public function Delete(Request $request):JsonResponse{
-    //     parse_str($request->getContent(), $parametres);
+    private function pagination(){
+        //get 
+    }
 
-    //     $TokenVerif = $this->tokenVerifier->checkToken($request);
-    //     if(gettype($TokenVerif) == 'boolean'){
-    //         return $this->json($this->tokenVerifier->sendJsonErrorToken($TokenVerif),401);
-    //     }
-    //     $user = $TokenVerif;
-    //     $parametres["sexe"] = intval($parametres["sexe"]);
-
-    //     $TokenVerif = $this->tokenVerifier->checkToken($request);
-    //     if(gettype($TokenVerif) == 'boolean'){
-    //         return $this->json($this->tokenVerifier->sendJsonErrorToken($TokenVerif),401);
-    //     }
-    //     $user = $TokenVerif;
-    //     switch ($user) {
-    //         case $user->getStatut() == false:
-    //             return $this->json([
-    //                 'error' => true,
-    //                 'message' => 'Le compte est déjà désactivé.'
-    //             ], 409);
-    //             break;
-    //         default:
-    //             $utilisateur = $this->entityManager->getRepository(User::class)->find($user->getId());
-    //             $utilisateur->setStatut(false);
-    //             $this->entityManager->flush();
-    //             return $this->json([
-    //                 'error' => false,
-    //                 'message' => "Votre compte a été désactivé avec succés. Nous sommes désolés de vous voir partir."
-    //             ], 200);
-    //             break;
-    //     }
-    // }
     #[Route('/artist', name: 'create_artist', methods: 'POST')]
     public function create(Request $request):JsonResponse{
-
+        
         parse_str($request->getContent(), $parametres);
+        //check token
         $TokenVerif = $this->tokenVerifier->checkToken($request);
         if(gettype($TokenVerif) == 'boolean'){
             return $this->json($this->tokenVerifier->sendJsonErrorToken($TokenVerif),401);
         }
         $user = $TokenVerif;
+        //get the content of the request
         $parameters = $request->getContent();
         parse_str($parameters, $data);
+        //tretment of the avatar and saving it
         $explodeData = explode(",", $data['avatar']);
         $base64Data = $data['avatar'];
         list($type, $base64Data) = explode(';', $base64Data);
@@ -98,9 +73,8 @@ class ArtistController extends AbstractController
                 'message' => "Le serveur ne peut pas décoder le contenue base64 en fichier binaire."
             ], 422);
         }
-
+        //check size
         $fileSize = strlen($imageData);
-        echo($fileSize);
         if ($fileSize < 1048576 || $fileSize > 7340032) {
             return $this->json([
                 'error' => true,
@@ -124,34 +98,37 @@ class ArtistController extends AbstractController
                     'message' => "Erreur sur le format du fichier qui est n'est pas pris en compte."
                 ], 422);
         }
-
+        //check age
         $dateString = $user->getDateBirth();
         $format = 'Y-m-d'; 
         $dateOfBirth = new DateTime($dateString);
         $dateOfBirth->format('Y-m-d H:i:s');
         $currentDate = new DateTime(); 
         $age = $currentDate->diff($dateOfBirth)->y;
-
         switch ($parametres) {
+            //check if the parameters are empty
             case $parametres["label"] == null || $parametres["fullname"] == null:
                 return $this->json([
                     'error' => true,
                     'message' => "L'id du label et le fullname sont obligatoires."
                 ],400);
                 break;
+            //check if the label format is valid
             case preg_match('/[!@#$%^&*()-_=+{};:",<.>]/',$parametres["label"]):
                 return $this->json([
                     'error' => true,
                     'message' => "Le format de l'id du label est invalide"
                 ]);
                 break;
+            //check if the age is over 16
             case $age < 16:
                 return $this->json([
                     'error' => true,
                     'message' => "Vous devez avoir au moins 16 ans pour être artiste."
                 ], 403);
                 break;
-            case $this->isnameTaken($parameters["fullname"]):
+            //check if the name is already taken
+            case $this->isnameTaken($parametres["fullname"]):
                 return $this->json([
                     'error' => true,
                     'message' => "Ce nom d'artiste est déjà pris. Veuillez en choisir un autre."
@@ -162,14 +139,43 @@ class ArtistController extends AbstractController
                 $artiste->setLabel($parametres["label"]);
                 $artiste->setFullname($parametres["fullname"]);
                 $artiste->setDescription($parametres["description"]);
-                $artiste->setUserId($user->getIdUser());
-                dd($artiste);
-                    return $this->json([
-                        'success' => true,
-                        'message' => "Votre compte d'artiste a été créé avec succès. Bienvenue dans notre communauté d'artistes!",
-                        'artist_id' => $artiste->getid()
-                    ], 200);
-                    break;
+                $artiste->setUserId($user);
+                $this->entityManager->persist($artiste);
+                $this->entityManager->flush();
+                return $this->json([
+                    'success' => true,
+                    'message' => "Votre compte d'artiste a été créé avec succès. Bienvenue dans notre communauté d'artistes!",
+                    'artist_id' => $artiste->getid()
+                ], 200);
+                break;
         }
+    }
+
+    //get all artists
+    #[Route('/artist', name: 'artist_get_all', methods: 'GET')]
+    public function getAll(Request $request): JsonResponse
+    {
+        //check token
+        parse_str($request->getContent(), $parametres);
+        // $TokenVerif = $this->tokenVerifier->checkToken($request);
+        // if(gettype($TokenVerif) == 'boolean'){
+        //     return $this->json($this->tokenVerifier->sendJsonErrorToken($TokenVerif),401);
+        // }
+        // //set user info to $user
+        // $user = $TokenVerif;
+        //get the content of the request
+        parse_str($request->getContent(), $parametres);
+        //get all artists
+        $artists = $this->repository->findAll();
+        //get the page number
+        $currentpage = intval($parametres["currentPage"]);
+        //get the number of items per page
+        $limit = intval($parametres["limit"]);
+        //get the artiste on this page
+        $result = array_chunk($artists, $limit);
+        dd($result);
+        return $this->json([
+            "error" => false,
+        ]);
     }
 }
