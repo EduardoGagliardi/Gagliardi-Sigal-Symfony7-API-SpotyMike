@@ -78,7 +78,6 @@ class ArtistController extends AbstractController
             return $this->json($this->tokenVerifier->sendJsonErrorToken($TokenVerif),401);
         }
         $user = $TokenVerif;
-
         $parameters = $request->getContent();
         parse_str($parameters, $data);
         $explodeData = explode(",", $data['avatar']);
@@ -93,7 +92,6 @@ class ArtistController extends AbstractController
             $extension = 'png';
         }
         $imageData = base64_decode($base64Data);
-
         if($imageData == null){
             return $this->json([
                 'error' => true,
@@ -102,33 +100,31 @@ class ArtistController extends AbstractController
         }
 
         $fileSize = strlen($imageData);
+        echo($fileSize);
         if ($fileSize < 1048576 || $fileSize > 7340032) {
             return $this->json([
                 'error' => true,
                 'message' => "Le fichier envoyé est trop ou pas assez volumineux. vous devez respecter la taille entre 1Mb et 7Mb."
             ], 422);
         }
-
         $chemin = $this->getParameter('upload_directory') . '/' . $user->getIdUser();
         $filePath = $chemin . "/avatar." . $extension;
 
         if (!file_exists($chemin)) {
             mkdir($chemin);
         }
-        if ($extension == "png") {
-            file_put_contents($filePath, $imageData);
-        }
-        else if ($extension == "jpg") {
-            file_put_contents($filePath, $imageData);
-        }
-        else {
-            return $this->json([
-                'error' => true,
-                'message' => "Erreur sur le format du fichier qui est n'est pas pris en compte."
-            ], 422);
+        switch ($extension) {
+            case 'png':
+            case 'jpg':
+                file_put_contents($filePath, $imageData);
+                break;
+            default:
+                return $this->json([
+                    'error' => true,
+                    'message' => "Erreur sur le format du fichier qui est n'est pas pris en compte."
+                ], 422);
         }
 
-        //on récupère la diférance d'age
         $dateString = $user->getDateBirth();
         $format = 'Y-m-d'; 
         $dateOfBirth = new DateTime($dateString);
@@ -162,18 +158,18 @@ class ArtistController extends AbstractController
                 ], 409);
                 break;
             default:
-            $artiste = new Artist;
-            $artiste->setLabel($parametres["label"]);
-            $artiste->setFullname($parametres["fullname"]);
-            $artiste->setDescription($parametres["description"]);
-            $artiste->setUserId($user);
-            dd($artiste);
-                return $this->json([
-                    'success' => true,
-                    'message' => "Votre compte d'artiste a été créé avec succès. Bienvenue dans notre communauté d'artistes!",
-                    'artist_id' => $artiste->getid()
-                ], 200);
-                break;
+                $artiste = new Artist;
+                $artiste->setLabel($parametres["label"]);
+                $artiste->setFullname($parametres["fullname"]);
+                $artiste->setDescription($parametres["description"]);
+                $artiste->setUserId($user->getIdUser());
+                dd($artiste);
+                    return $this->json([
+                        'success' => true,
+                        'message' => "Votre compte d'artiste a été créé avec succès. Bienvenue dans notre communauté d'artistes!",
+                        'artist_id' => $artiste->getid()
+                    ], 200);
+                    break;
         }
     }
 }
