@@ -27,6 +27,14 @@ class ArtistController extends AbstractController
         $this->loginAttemptService = $loginAttemptService;
     }
 
+    private function isnameTaken($fullname){
+        $artist = $this->repository->findOneBy(['fullname' => $fullname]);
+        if($artist != null){
+            return true;
+        }
+        return false;
+    }
+
     // #[Route('/account-deactivation', name: 'user_delete', methods: 'DELETE')]
     // public function Delete(Request $request):JsonResponse{
     //     parse_str($request->getContent(), $parametres);
@@ -65,13 +73,11 @@ class ArtistController extends AbstractController
     public function create(Request $request):JsonResponse{
 
         parse_str($request->getContent(), $parametres);
-        //on vérifie le token et on récupère user du token
         $TokenVerif = $this->tokenVerifier->checkToken($request);
         if(gettype($TokenVerif) == 'boolean'){
             return $this->json($this->tokenVerifier->sendJsonErrorToken($TokenVerif),401);
         }
         $user = $TokenVerif;
-
         $parameters = $request->getContent();
         parse_str($parameters, $data);
         $explodeData = explode(",", $data['avatar']);
@@ -85,25 +91,40 @@ class ArtistController extends AbstractController
         else if('data:image/png'){
             $extension = 'png';
         }
-        // Decode the base64 data
         $imageData = base64_decode($base64Data);
+        if($imageData == null){
+            return $this->json([
+                'error' => true,
+                'message' => "Le serveur ne peut pas décoder le contenue base64 en fichier binaire."
+            ], 422);
+        }
 
+        $fileSize = strlen($imageData);
+        echo($fileSize);
+        if ($fileSize < 1048576 || $fileSize > 7340032) {
+            return $this->json([
+                'error' => true,
+                'message' => "Le fichier envoyé est trop ou pas assez volumineux. vous devez respecter la taille entre 1Mb et 7Mb."
+            ], 422);
+        }
         $chemin = $this->getParameter('upload_directory') . '/' . $user->getIdUser();
-        // Define the file path to save the image
         $filePath = $chemin . "/avatar." . $extension;
 
         if (!file_exists($chemin)) {
             mkdir($chemin);
         }
-        if ($extension == "png") {
-            file_put_contents($filePath, $imageData);
-        }
-        else if ($extension == "jpg") {
-            file_put_contents($filePath, $imageData);
+        switch ($extension) {
+            case 'png':
+            case 'jpg':
+                file_put_contents($filePath, $imageData);
+                break;
+            default:
+                return $this->json([
+                    'error' => true,
+                    'message' => "Erreur sur le format du fichier qui est n'est pas pris en compte."
+                ], 422);
         }
 
-        dd('ok');
-        //on récupère la diférance d'age
         $dateString = $user->getDateBirth();
         $format = 'Y-m-d'; 
         $dateOfBirth = new DateTime($dateString);
@@ -118,7 +139,7 @@ class ArtistController extends AbstractController
                     'message' => "L'id du label et le fullname sont obligatoires."
                 ],400);
                 break;
-            case preg_match('/[!@#$%^&*()-_=+{};:,<.>]/',$parametres["label"]):
+            case preg_match('/[!@#$%^&*()-_=+{};:",<.>]/',$parametres["label"]):
                 return $this->json([
                     'error' => true,
                     'message' => "Le format de l'id du label est invalide"
@@ -130,19 +151,25 @@ class ArtistController extends AbstractController
                     'message' => "Vous devez avoir au moins 16 ans pour être artiste."
                 ], 403);
                 break;
-            default:
-            $artiste = new Artist;
-            $artiste->setLabel($parametres["label"]);
-            $artiste->setFullname($parametres["fullname"]);
-            $artiste->setDescription($parametres["description"]);
-            $artiste->setUserId($user);
-            dd($artiste);
+            case $this->isnameTaken($parameters["fullname"]):
                 return $this->json([
-                    'success' => true,
-                    'message' => "Votre compte d'artiste a été créé avec succès. Bienvenue dans notre communauté d'artiste!",
-                    'artist_id' => $artiste->getid()
-                ], 200);
+                    'error' => true,
+                    'message' => "Ce nom d'artiste est déjà pris. Veuillez en choisir un autre."
+                ], 409);
                 break;
+            default:
+                $artiste = new Artist;
+                $artiste->setLabel($parametres["label"]);
+                $artiste->setFullname($parametres["fullname"]);
+                $artiste->setDescription($parametres["description"]);
+                $artiste->setUserId($user->getIdUser());
+                dd($artiste);
+                    return $this->json([
+                        'success' => true,
+                        'message' => "Votre compte d'artiste a été créé avec succès. Bienvenue dans notre communauté d'artistes!",
+                        'artist_id' => $artiste->getid()
+                    ], 200);
+                    break;
         }
     }
 }
